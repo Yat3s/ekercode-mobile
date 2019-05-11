@@ -2,14 +2,7 @@ module.exports = (api, options) => {
   api.cache(false);
 
   return {
-    presets: [
-      [
-        'poi/babel',
-        {
-          env: {},
-        },
-      ],
-    ],
+    presets: [['poi/babel']],
     plugins: [
       'styled-components',
       [
