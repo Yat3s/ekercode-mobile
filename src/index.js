@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import FastClick from 'fastclick';
 import AV from 'leancloud-storage';
+import 'whatwg-fetch';
 import 'normalize.css';
 
 import App from './app';

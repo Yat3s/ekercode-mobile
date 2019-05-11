@@ -212,11 +212,25 @@ export default function SignUp() {
     const verifyCode = state.verifyCode.value;
 
     setLoading(true);
+
+    let ip;
+    try {
+      const response = await fetch('https://ipapi.co/json');
+      const data = await response.json();
+      console.log(data);
+
+      ip = data.ip;
+    } catch (error) {
+      console.error(error);
+    }
+
     try {
       await AV.User.signUpOrlogInWithMobilePhone(phone, verifyCode, {
         childrenAge: age,
+        ip,
       });
     } catch (error) {
+      console.error(error);
       Toast.fail(`注册失败：${error.rawMessage}`);
       return;
     } finally {
@@ -234,10 +248,12 @@ export default function SignUp() {
     }
     console.log(errors);
 
-    const success = await AV.Cloud.requestSmsCode(state.phone.value);
-    console.group('handleSendVerifyCode');
-    console.log({ success });
-    console.groupEnd();
-    // 153 7292 0559
+    try {
+      await AV.Cloud.requestSmsCode(state.phone.value);
+    } catch (error) {
+      console.error(error);
+      Toast.fail(`发送验证码失败：${error.rawMessage}`);
+      return;
+    }
   }
 }
