@@ -12,6 +12,7 @@ import {
   Card,
 } from 'antd-mobile';
 
+import useForm from '../../hooks/useForm';
 import SuccessModal from './success-modal';
 
 const { AgreeItem } = Checkbox;
@@ -92,10 +93,20 @@ const FooterQrcodeText = styled.div`
   font-size: 12px;
 `;
 
+const rules = {
+  phone: {
+    validate: v => {
+      return typeof v === 'string' && /^\d{3}\s\d{4}\s\d{4}$/.test(v);
+    },
+  },
+  verifyCode: {},
+  ages: {
+    default: [],
+  },
+};
+
 export default function SignUp() {
-  const [phone, setPhone] = React.useState();
-  const [verifyCode, setVerifyCode] = React.useState();
-  const [ages, setAges] = React.useState([]);
+  const [state, { getFieldProps, validate }] = useForm(rules);
   const [successModalVisible, setSuccessModalVisible] = React.useState(false);
 
   return (
@@ -107,24 +118,12 @@ export default function SignUp() {
       <WhiteSpace />
 
       <List>
-        <InputItem
-          type="phone"
-          value={phone}
-          onChange={v => {
-            setPhone(v);
-          }}
-        >
+        <InputItem type="phone" {...getFieldProps('phone')}>
           手机号
         </InputItem>
 
         <VerifyCodeContainer>
-          <InputItem
-            type="digit"
-            value={verifyCode}
-            onChange={v => {
-              setVerifyCode(v);
-            }}
-          >
+          <InputItem type="tel" maxLength={6} {...getFieldProps('verifyCode')}>
             验证码
           </InputItem>
 
@@ -138,14 +137,7 @@ export default function SignUp() {
           </VerifyButton>
         </VerifyCodeContainer>
 
-        <Picker
-          cols={1}
-          data={AGES}
-          value={ages}
-          onChange={v => {
-            setAges(v);
-          }}
-        >
+        <Picker cols={1} data={AGES} {...getFieldProps('ages')}>
           <List.Item arrow="horizontal">请选择孩子年龄</List.Item>
         </Picker>
       </List>
@@ -197,9 +189,18 @@ export default function SignUp() {
   );
 
   function handleSignUp() {
-    const [age] = ages;
+    console.log(state);
+    const errors = validate();
+    if (errors) {
+      console.warn(errors, '表单输入有误，请重新输入');
+      return;
+    }
 
-    console.log({ phone, verifyCode, age });
+    const [age] = state.ages.value;
+    const phone = state.phone.value;
+    const verifyCode = state.verifyCode.value;
+
+    console.log({ age, phone, verifyCode });
 
     setSuccessModalVisible(true);
   }
