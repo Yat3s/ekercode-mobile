@@ -14,7 +14,9 @@ import {
 } from 'antd-mobile';
 import AV from 'leancloud-storage';
 
-import useForm from '../../hooks/useForm';
+import Trial from '@/models/trial';
+import useForm from '@/hooks/useForm';
+
 import SuccessModal from './success-modal';
 
 const { AgreeItem } = Checkbox;
@@ -42,6 +44,10 @@ const Title = styled.h1`
   font-size: 21px;
   font-weight: 400;
   text-align: left;
+`;
+
+const InputItemVerifyCode = styled(InputItem)`
+  flex: 1;
 `;
 
 const VerifyCodeContainer = styled.div`
@@ -96,7 +102,7 @@ const FooterQrcodeText = styled.div`
 `;
 
 const rules = {
-  phone: {
+  mobile: {
     validate: v => {
       return typeof v === 'string' && /^\d{3}\s\d{4}\s\d{4}$/.test(v);
     },
@@ -114,8 +120,6 @@ const rules = {
   },
 };
 
-console.log(AV);
-
 export default function SignUp() {
   const [state, { getFieldProps, validate }] = useForm(rules);
   const [successModalVisible, setSuccessModalVisible] = React.useState(false);
@@ -130,14 +134,18 @@ export default function SignUp() {
       <WhiteSpace />
 
       <List>
-        <InputItem type="phone" {...getFieldProps('phone')}>
+        <InputItem type="phone" {...getFieldProps('mobile')}>
           手机号
         </InputItem>
 
         <VerifyCodeContainer>
-          <InputItem type="tel" maxLength={6} {...getFieldProps('verifyCode')}>
+          <InputItemVerifyCode
+            type="tel"
+            maxLength={6}
+            {...getFieldProps('verifyCode')}
+          >
             验证码
-          </InputItem>
+          </InputItemVerifyCode>
 
           <VerifyButton
             inline={false}
@@ -208,7 +216,8 @@ export default function SignUp() {
     }
 
     const [age] = state.ages.value;
-    const phone = state.phone.value;
+    // antd 处理过的手机输入是带有空字符的
+    const mobile = state.mobile.value.replace(/\s/g, '');
     const verifyCode = state.verifyCode.value;
 
     setLoading(true);
@@ -217,21 +226,30 @@ export default function SignUp() {
     try {
       const response = await fetch('https://ipapi.co/json');
       const data = await response.json();
-      console.log(data);
-
       ip = data.ip;
     } catch (error) {
       console.error(error);
     }
 
     try {
-      await AV.User.signUpOrlogInWithMobilePhone(phone, verifyCode, {
-        childrenAge: age,
-        ip,
-      });
+      await AV.Cloud.verifySmsCode(verifyCode, mobile);
     } catch (error) {
       console.error(error);
-      Toast.fail(`注册失败：${error.rawMessage}`);
+      Toast.fail(`验证短信验证码失败：${error.rawMessage}`);
+      setLoading(false);
+      return;
+    }
+
+    const trial = new Trial();
+    trial.set('mobile', mobile);
+    trial.set('ip', ip);
+    trial.set('kidAge', age);
+
+    try {
+      await trial.save();
+    } catch (error) {
+      console.error(error);
+      Toast.fail(`申请试用失败：${error.rawMessage}，请重试~`);
       return;
     } finally {
       setLoading(false);
@@ -241,15 +259,16 @@ export default function SignUp() {
   }
 
   async function handleSendVerifyCode() {
-    const errors = validate(['phone']);
+    const errors = validate(['mobile']);
     if (errors) {
+      console.log(errors);
       Toast.fail(`请先填写手机号码`);
       return;
     }
-    console.log(errors);
 
     try {
-      await AV.Cloud.requestSmsCode(state.phone.value);
+      await AV.Cloud.requestSmsCode(state.mobile.value);
+      Toast.success(`发送手机验证码成功，请注意查收`);
     } catch (error) {
       console.error(error);
       Toast.fail(`发送验证码失败：${error.rawMessage}`);
