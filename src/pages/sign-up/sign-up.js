@@ -12,6 +12,8 @@ import {
   Card,
 } from 'antd-mobile';
 
+import SuccessModal from './success-modal';
+
 const { AgreeItem } = Checkbox;
 
 const AGES = [
@@ -91,6 +93,11 @@ const FooterQrcodeText = styled.div`
 `;
 
 export default function SignUp() {
+  const [phone, setPhone] = React.useState();
+  const [verifyCode, setVerifyCode] = React.useState();
+  const [ages, setAges] = React.useState([]);
+  const [successModalVisible, setSuccessModalVisible] = React.useState(false);
+
   return (
     <Root>
       <WingBlank>
@@ -100,17 +107,45 @@ export default function SignUp() {
       <WhiteSpace />
 
       <List>
-        <InputItem type="phone">手机号</InputItem>
+        <InputItem
+          type="phone"
+          value={phone}
+          onChange={v => {
+            setPhone(v);
+          }}
+        >
+          手机号
+        </InputItem>
 
         <VerifyCodeContainer>
-          <InputItem type="digit">验证码</InputItem>
+          <InputItem
+            type="digit"
+            value={verifyCode}
+            onChange={v => {
+              setVerifyCode(v);
+            }}
+          >
+            验证码
+          </InputItem>
 
-          <VerifyButton inline={false} size="small" type="primary">
+          <VerifyButton
+            inline={false}
+            size="small"
+            type="primary"
+            onClick={handleSendVerifyCode}
+          >
             发送验证码
           </VerifyButton>
         </VerifyCodeContainer>
 
-        <Picker cols={1} data={AGES}>
+        <Picker
+          cols={1}
+          data={AGES}
+          value={ages}
+          onChange={v => {
+            setAges(v);
+          }}
+        >
           <List.Item arrow="horizontal">请选择孩子年龄</List.Item>
         </Picker>
       </List>
@@ -119,10 +154,7 @@ export default function SignUp() {
 
       <Flex>
         <Flex.Item>
-          <AgreeItem
-            data-seed="logId"
-            onChange={e => console.log('checkbox', e)}
-          >
+          <AgreeItem data-seed="logId">
             我已阅读并同意《Ekercodee 用户注册协议》
           </AgreeItem>
         </Flex.Item>
@@ -131,7 +163,9 @@ export default function SignUp() {
       <WhiteSpace />
 
       <WingBlank>
-        <Button type="primary">免费试听</Button>
+        <Button type="primary" onClick={handleSignUp}>
+          免费试听
+        </Button>
       </WingBlank>
 
       <WhiteSpace />
@@ -152,6 +186,23 @@ export default function SignUp() {
           </FooterQrcodeContainer>
         </FooterBody>
       </Footer>
+
+      <SuccessModal
+        visible={successModalVisible}
+        onClose={() => {
+          setSuccessModalVisible(false);
+        }}
+      />
     </Root>
   );
+
+  function handleSignUp() {
+    const [age] = ages;
+
+    console.log({ phone, verifyCode, age });
+
+    setSuccessModalVisible(true);
+  }
+
+  function handleSendVerifyCode() {}
 }
