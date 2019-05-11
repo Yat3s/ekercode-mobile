@@ -99,9 +99,16 @@ const rules = {
       return typeof v === 'string' && /^\d{3}\s\d{4}\s\d{4}$/.test(v);
     },
   },
-  verifyCode: {},
+  verifyCode: {
+    validate: v => {
+      return typeof v === 'string' && /^\d{6}$/.test(v);
+    },
+  },
   ages: {
     default: [],
+    validate: ([age]) => {
+      return typeof age !== 'undefined';
+    },
   },
 };
 
