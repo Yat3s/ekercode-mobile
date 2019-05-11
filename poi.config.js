@@ -1,4 +1,5 @@
 const webpack = require('webpack');
+const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 
 module.exports = options => {
   return {
@@ -20,6 +21,24 @@ module.exports = options => {
         .plugin('env')
         .use(webpack.EnvironmentPlugin)
         .tap(args => [...(args || []), ...envVars]);
+
+      config.plugin('html-webpack-tags-plugin').use(HtmlWebpackTagsPlugin, [
+        {
+          usePublicPath: false,
+          append: false,
+          useHash: true,
+          tags: [
+            {
+              path:
+                'https://cdn.jsdelivr.net/npm/leancloud-storage@3.13.1/dist/av-min.js',
+              external: {
+                packageName: 'leancloud-storage',
+                variableName: 'AV',
+              },
+            },
+          ],
+        },
+      ]);
     },
   };
 };

@@ -14,6 +14,7 @@
     "babel-plugin-module-resolver": "^3.2.0",
     "babel-plugin-styled-components": "^1.10.0",
     "fastclick": "^1.0.6",
+    "html-webpack-tags-plugin": "^2.0.12",
     "normalize.css": "^8.0.1",
     "poi": "^12.6.8",
     "react": "16.8.6",

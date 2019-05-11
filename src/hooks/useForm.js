@@ -37,7 +37,7 @@ function reducer(state, action) {
     }
 
     case Action.VALIDATE: {
-      return action.payload.validatedState;
+      return { ...state, ...action.payload.validatedState };
     }
     default:
       return state;
@@ -68,36 +68,34 @@ function getFieldState(state, action) {
   return fieldState;
 }
 
-function validate(state) {
-  const fields = Object.keys(state);
-
-  return fields.reduce((acc, field) => {
-    const fieldState = state[field];
+function validateFields(fullState, fieldsToUpdate = Object.keys(fullState)) {
+  const validatedFields = fieldsToUpdate.reduce((acc, field) => {
+    const fieldState = fullState[field];
     const validate = fieldState[FIELD_VALIDATE];
     const error = validate ? !validate(fieldState.value) : null;
     acc[field] = {
       ...fieldState,
       error,
     };
+
     return acc;
   }, {});
+
+  return validatedFields;
 }
 
 export default function useForm(rules = {}) {
-  const [state, dispatch] = React.useReducer(reducer, rules, init);
-  const getFieldProps = React.useCallback(
-    field => {
-      const { value, error } = state[field];
-      return {
-        value,
-        error,
-        onChange(value) {
-          dispatch({ type: Action.VALUE, payload: { field, value } });
-        },
-      };
-    },
-    [state, dispatch],
-  );
+  const [internalState, dispatch] = React.useReducer(reducer, rules, init);
+  const getFieldProps = field => {
+    const { value, error } = internalState[field];
+    return {
+      value,
+      error,
+      onChange(value) {
+        dispatch({ type: Action.VALUE, payload: { field, value } });
+      },
+    };
+  };
   // const handleSubmit = React.useCallback(
   //   e => {
   //     if (e && e.preventDefault) {
@@ -109,7 +107,6 @@ export default function useForm(rules = {}) {
   //   },
   //   [state],
   // );
-  const internalState = state;
   const getErrors = (state = internalState) => {
     const fields = Object.keys(state);
     const errors = fields.reduce((acc, field) => {
@@ -122,13 +119,16 @@ export default function useForm(rules = {}) {
 
     return Object.keys(errors).length === 0 ? null : errors;
   };
-  const isSubmitting = React.useCallback(() => {
-    return state[FORM_SUBMITTING];
-  }, [state]);
-  const validateState = () => {
-    const validatedState = validate(state);
-    dispatch({ type: Action.VALIDATE, payload: { validatedState } });
-    return getErrors(validatedState);
+  const isSubmitting = () => {
+    return internalState[FORM_SUBMITTING];
   };
-  return [state, { getFieldProps, getErrors, validate: validateState }];
+  const validate = fieldsToValidate => {
+    const validatedFields = validateFields(internalState, fieldsToValidate);
+    dispatch({
+      type: Action.VALIDATE,
+      payload: { validatedState: validatedFields },
+    });
+    return getErrors(validatedFields);
+  };
+  return [internalState, { getFieldProps, getErrors, validate, isSubmitting }];
 }

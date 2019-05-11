@@ -10,7 +10,9 @@ import {
   Checkbox,
   Flex,
   Card,
+  Toast,
 } from 'antd-mobile';
+import AV from 'leancloud-storage';
 
 import useForm from '../../hooks/useForm';
 import SuccessModal from './success-modal';
@@ -112,9 +114,12 @@ const rules = {
   },
 };
 
+console.log(AV);
+
 export default function SignUp() {
   const [state, { getFieldProps, validate }] = useForm(rules);
   const [successModalVisible, setSuccessModalVisible] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   return (
     <Root>
@@ -162,7 +167,7 @@ export default function SignUp() {
       <WhiteSpace />
 
       <WingBlank>
-        <Button type="primary" onClick={handleSignUp}>
+        <Button type="primary" loading={loading} onClick={handleSignUp}>
           免费试听
         </Button>
       </WingBlank>
@@ -195,11 +200,10 @@ export default function SignUp() {
     </Root>
   );
 
-  function handleSignUp() {
-    console.log(state);
+  async function handleSignUp() {
     const errors = validate();
     if (errors) {
-      console.warn(errors, '表单输入有误，请重新输入');
+      Toast.fail('表单输入有误，请重新输入');
       return;
     }
 
@@ -207,10 +211,33 @@ export default function SignUp() {
     const phone = state.phone.value;
     const verifyCode = state.verifyCode.value;
 
-    console.log({ age, phone, verifyCode });
+    setLoading(true);
+    try {
+      await AV.User.signUpOrlogInWithMobilePhone(phone, verifyCode, {
+        childrenAge: age,
+      });
+    } catch (error) {
+      Toast.fail(`注册失败：${error.rawMessage}`);
+      return;
+    } finally {
+      setLoading(false);
+    }
 
     setSuccessModalVisible(true);
   }
 
-  function handleSendVerifyCode() {}
+  async function handleSendVerifyCode() {
+    const errors = validate(['phone']);
+    if (errors) {
+      Toast.fail(`请先填写手机号码`);
+      return;
+    }
+    console.log(errors);
+
+    const success = await AV.Cloud.requestSmsCode(state.phone.value);
+    console.group('handleSendVerifyCode');
+    console.log({ success });
+    console.groupEnd();
+    // 153 7292 0559
+  }
 }
